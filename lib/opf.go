@@ -82,34 +82,34 @@ var opfTemplate = `<?xml version="1.0" encoding="utf-8"?>
 `
 
 func BuildOpenPackagingFormat(cl []ChapterItem) error {
-	bookInfo, _ := GetBookInfo("")
-	authors := ""
-	for _, val := range bookInfo.Authors {
-		authors += fmt.Sprintf("<dc:creator>%s</dc:creator>", val.Name)
-	}
+    bookInfo, _ := GetBookInfo("")
+    authors := ""
+    for _, val := range bookInfo.Authors {
+        authors += fmt.Sprintf("<dc:creator>%s</dc:creator>", val.Name)
+    }
 
-	manifestItem := ""
-	spineItem := ""
-	for _, val := range cl {
-		manifestItem += fmt.Sprintf("<item id=\"%s\" media-type=\"%s\" href=\"%[1]s\"></item>\r\n", val.FullPath, "application/xhtml+xml")
-		spineItem += fmt.Sprintf("<itemref idref=\"%s\"/>\r\n", val.FullPath)
-		if len(val.Images) > 0 {
-			for _, imgVal := range val.Images {
-				manifestItem += fmt.Sprintf("<item id=\"%s\" media-type=\"%s\" href=\"%[1]s\"></item>\r\n", imgVal, "")
-			}
-		}
-	}
+    manifestItem := ""
+    spineItem := ""
+    for _, val := range cl {
+        manifestItem += fmt.Sprintf("<item id=\"%s\" media-type=\"%s\" href=\"%[1]s\"></item>\r\n", val.FullPath, "application/xhtml+xml")
+        spineItem += fmt.Sprintf("<itemref idref=\"%s\"/>\r\n", val.FullPath)
+        if len(val.Images) > 0 {
+            for _, imgVal := range val.Images {
+                manifestItem += fmt.Sprintf("<item id=\"%s\" media-type=\"%s\" href=\"%[1]s\"></item>\r\n", imgVal, "")
+            }
+        }
+    }
 
-	firstItem := GetFirstItem()
+    firstItem := GetFirstItem()
 
-	next := fmt.Sprintf("<reference type=\"text\" title=\"%s\" href=\"%s\"></reference>", firstItem.Label, firstItem.Href)
+    next := fmt.Sprintf("<reference type=\"text\" title=\"%s\" href=\"%s\"></reference>", firstItem.Label, firstItem.Href)
 
-	opf := fmt.Sprintf(opfTemplate, bookInfo.Title, bookInfo.Language, bookInfo.Isbn, authors, bookInfo.Issued, bookInfo.Description, manifestItem, spineItem, next)
-	err := SaveFile("build.opf", []byte(opf))
-	if err != nil {
-		return err
-	}
+    opf := fmt.Sprintf(opfTemplate, bookInfo.Title, bookInfo.Language, bookInfo.Isbn, authors, bookInfo.Issued, bookInfo.Description, manifestItem, spineItem, next)
+    err := SaveFile("build.opf", []byte(opf))
+    if err != nil {
+        return err
+    }
 
-	return nil
+    return nil
 
 }
