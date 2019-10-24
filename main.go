@@ -1,25 +1,50 @@
 package main
 
 import (
+    "flag"
     "fmt"
     "oreilly_kindle_book/lib"
+    "runtime"
     "sync"
 )
 
+var bookNum *string
+var userEmail *string
+var userPasswd *string
+
+func init() {
+    bookNum = flag.String("n", "", "the num of https://learning.oreilly.com/library/view/BOOK-NAME/***")
+    userEmail = flag.String("email", "", "you login email of https://www.oreilly.com/member/")
+    userPasswd = flag.String("p", "", "you login password of https://www.oreilly.com/member/")
+    flag.Parse()
+}
+
 func main() {
-    bookNum := "9781491926291"
 
-    err := lib.Init()
+    if *bookNum == "" || *userEmail == "" || *userPasswd == "" {
+        flag.Usage()
+        return
+    }
+
+    if err := lib.Login(*userEmail, *userPasswd); err != nil {
+        fmt.Println(err)
+        return
+    }
+    fmt.Println("login success!")
+
+    err := lib.InitCheck()
     if err != nil {
         fmt.Println(err)
         return
     }
+    defer lib.TmpClear()
 
-    bookInfo, err := lib.GetBookInfo(bookNum)
+    bookInfo, err := lib.GetBookInfo(*bookNum)
     if err != nil {
         fmt.Println(err)
         return
     }
+    fmt.Println("book name:", bookInfo.Title)
 
     // Build toc.html, toc.ncx.
     err = lib.BuildToc(bookInfo.Toc)
@@ -27,7 +52,9 @@ func main() {
         fmt.Println(err)
         return
     }
+    fmt.Println("build toc success!")
 
+    fmt.Println("get chapter:")
     chapterList, err := lib.GetAllChapter(bookInfo.ChapterList)
     if err != nil {
         fmt.Println(err)
@@ -39,6 +66,7 @@ func main() {
         fmt.Println(err)
         return
     }
+    fmt.Println("get cover success!")
 
     // Save chapter html, images, css files.
     wg := sync.WaitGroup{}
@@ -50,6 +78,7 @@ func main() {
         }(val)
     }
 
+    runtime.GOMAXPROCS(8)
     wg.Wait()
 
     // Build opf file.
@@ -58,6 +87,9 @@ func main() {
         fmt.Println(err)
         return
     }
+    fmt.Println("build opf file success!")
 
-    fmt.Println("success!")
+    fmt.Println("generate mobi:")
+    bookInfo.GenerateMobi()
+
 }

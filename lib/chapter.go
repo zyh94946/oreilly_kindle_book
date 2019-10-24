@@ -32,8 +32,8 @@ var cssList = make([]string, 0)
 func GetAllChapter(url string) ([]ChapterItem, error) {
     chapterRes := chapter{}
 
-    err := GetJson(url, &chapterRes)
-    if err != nil {
+    jc := jsonCus{url:url, method:"GET"}
+    if err := jc.getJson(&chapterRes); err != nil {
         return []ChapterItem{}, err
     }
 
@@ -44,8 +44,7 @@ func GetAllChapter(url string) ([]ChapterItem, error) {
     }
 
     if chapterRes.Next != "" {
-        _, err = GetAllChapter(chapterRes.Next)
-        if err != nil {
+        if _, err := GetAllChapter(chapterRes.Next); err != nil {
             return []ChapterItem{}, err
         }
     }
@@ -54,15 +53,15 @@ func GetAllChapter(url string) ([]ChapterItem, error) {
 }
 
 func (ci ChapterItem) Down() {
-    err := ci.saveHtml(ci.Content, ci.FullPath)
-    if err != nil {
+    fmt.Println("download", ci.FullPath)
+    if err := ci.saveHtml(ci.Content, ci.FullPath); err != nil {
         fmt.Println(err)
         return
     }
     if len(ci.Images) > 0 {
         for _, imgUrl := range ci.Images {
-            err := SaveHttpFile(ci.AssetBaseUrl+imgUrl, imgUrl)
-            if err != nil {
+            fmt.Println("download", imgUrl)
+            if err := SaveHttpFile(ci.AssetBaseUrl+imgUrl, imgUrl); err != nil {
                 fmt.Println(err)
             }
         }
@@ -92,8 +91,7 @@ func (ci ChapterItem) saveHtml(useUrl string, fullPath string) error {
     html.Write(body)
     html.WriteString(foot)
 
-    err = SaveFile(fullPath, html.Bytes())
-    if err != nil {
+    if err = SaveFile(fullPath, html.Bytes()); err != nil {
         return err
     }
 
@@ -107,8 +105,7 @@ func (ci ChapterItem) getCssHtml() (string, error) {
     }
 
     for _, styleVal := range ci.Stylesheets {
-        err := styleVal.saveCss()
-        if err != nil {
+        if err := styleVal.saveCss(); err != nil {
             return "", err
         }
         styleHtml += fmt.Sprintf("<link rel=\"stylesheet\" href=\"%s\" type=\"text/css\" />", styleVal.FullPath)
@@ -124,8 +121,7 @@ func (ss styleSheet) saveCss() error {
         }
     }
 
-    err := SaveHttpFile(ss.OriginalUrl, ss.FullPath)
-    if err != nil {
+    if err := SaveHttpFile(ss.OriginalUrl, ss.FullPath); err != nil {
         return err
     }
 

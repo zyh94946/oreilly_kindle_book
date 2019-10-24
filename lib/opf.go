@@ -105,8 +105,7 @@ func BuildOpenPackagingFormat(cl []ChapterItem) error {
     next := fmt.Sprintf("<reference type=\"text\" title=\"%s\" href=\"%s\"></reference>", firstItem.Label, firstItem.Href)
 
     opf := fmt.Sprintf(opfTemplate, bookInfo.Title, bookInfo.Language, bookInfo.Isbn, authors, bookInfo.Issued, bookInfo.Description, manifestItem, spineItem, next)
-    err := SaveFile("build.opf", []byte(opf))
-    if err != nil {
+    if err := SaveFile("build.opf", []byte(opf)); err != nil {
         return err
     }
 

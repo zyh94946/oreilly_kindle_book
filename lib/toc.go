@@ -69,21 +69,18 @@ func BuildToc(tocUrl string) error {
 
     bookInfo, _ := GetBookInfo("")
 
-    err := getToc(tocUrl)
-    if err != nil {
+    if err := getToc(tocUrl); err != nil {
         return err
     }
     getTocVal(tocList)
 
     tocHtml := fmt.Sprintf(tocHtmlTemplate, tocHtmlVar)
-    err = SaveFile("toc.html", []byte(tocHtml))
-    if err != nil {
+    if err := SaveFile("toc.html", []byte(tocHtml)); err != nil {
         return err
     }
 
     tocNcx := fmt.Sprintf(tocNcxTemplate, bookInfo.Isbn, tocDepth, bookInfo.PageCount, bookInfo.Title, bookInfo.OrderAbleAuthor, tocNcxVar)
-    err = SaveFile("toc.ncx", []byte(tocNcx))
-    if err != nil {
+    if err := SaveFile("toc.ncx", []byte(tocNcx)); err != nil {
         return err
     }
 
@@ -91,8 +88,8 @@ func BuildToc(tocUrl string) error {
 }
 
 func getToc(url string) error {
-    err := GetJson(url, &tocList)
-    if err != nil {
+    jc := jsonCus{url:url, method:"GET"}
+    if err := jc.getJson(&tocList); err != nil {
         return err
     }
 
