@@ -1,6 +1,9 @@
 package lib
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 var opfTemplate = `<?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="2.0" unique-identifier="BookId">
@@ -82,33 +85,33 @@ var opfTemplate = `<?xml version="1.0" encoding="utf-8"?>
 `
 
 func BuildOpenPackagingFormat(cl []ChapterItem) error {
-    bookInfo, _ := GetBookInfo("")
-    authors := ""
-    for _, val := range bookInfo.Authors {
-        authors += fmt.Sprintf("<dc:creator>%s</dc:creator>", val.Name)
-    }
+	bookInfo, _ := GetBookInfo("")
+	authors := strings.Builder{}
+	for _, val := range bookInfo.Authors {
+		authors.WriteString(`<dc:creator>` + val.Name + `</dc:creator>`)
+	}
 
-    manifestItem := ""
-    spineItem := ""
-    for _, val := range cl {
-        manifestItem += fmt.Sprintf("<item id=\"%s\" media-type=\"%s\" href=\"%[1]s\"></item>\r\n", val.FullPath, "application/xhtml+xml")
-        spineItem += fmt.Sprintf("<itemref idref=\"%s\"/>\r\n", val.FullPath)
-        if len(val.Images) > 0 {
-            for _, imgVal := range val.Images {
-                manifestItem += fmt.Sprintf("<item id=\"%s\" media-type=\"%s\" href=\"%[1]s\"></item>\r\n", imgVal, "")
-            }
-        }
-    }
+	manifestItem := strings.Builder{}
+	spineItem := strings.Builder{}
+	for _, val := range cl {
+		manifestItem.WriteString(`<item id="` + val.FullPath + `" media-type="application/xhtml+xml" href="` + val.FullPath + `"></item>"`)
+		spineItem.WriteString(`<itemref idref="` + val.FullPath + `"/>"`)
+	}
 
-    firstItem := GetFirstItem()
+	RangeChapterImage(func(k interface{}, v interface{}) bool {
+		manifestItem.WriteString(`<item id="` + k.(string) + `" media-type="" href="` + k.(string) + `"></item>"`)
+		return true
+	})
 
-    next := fmt.Sprintf("<reference type=\"text\" title=\"%s\" href=\"%s\"></reference>", firstItem.Label, firstItem.Href)
+	firstItem := GetFirstItem()
 
-    opf := fmt.Sprintf(opfTemplate, bookInfo.Title, bookInfo.Language, bookInfo.Isbn, authors, bookInfo.Issued, bookInfo.Description, manifestItem, spineItem, next)
-    if err := SaveFile("build.opf", []byte(opf)); err != nil {
-        return err
-    }
+	next := fmt.Sprintf("<reference type=\"text\" title=\"%s\" href=\"%s\"></reference>", firstItem.Label, firstItem.Href)
 
-    return nil
+	opf := fmt.Sprintf(opfTemplate, bookInfo.Title, bookInfo.Language, bookInfo.Isbn, authors, bookInfo.Issued, bookInfo.Description, manifestItem, spineItem, next)
+	if err := SaveFile("build.opf", []byte(opf)); err != nil {
+		return err
+	}
+
+	return nil
 
 }

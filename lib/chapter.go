@@ -1,131 +1,141 @@
 package lib
 
 import (
-    "bytes"
-    "fmt"
-    "io/ioutil"
+	"bytes"
+	"fmt"
+	"io/ioutil"
+	"strings"
+	"sync"
 )
 
 type chapter struct {
-    Next    string        `json:"next"`
-    Results []ChapterItem `json:"results"`
+	Next    string        `json:"next"`
+	Results []ChapterItem `json:"results"`
 }
 
 type ChapterItem struct {
-    FullPath     string       `json:"full_path"`
-    Content      string       `json:"content"`
-    Title        string       `json:"title"`
-    AssetBaseUrl string       `json:"asset_base_url"`
-    Images       []string     `json:"images"`
-    Stylesheets  []styleSheet `json:"stylesheets"`
+	FullPath     string       `json:"full_path"`
+	Content      string       `json:"content"`
+	Title        string       `json:"title"`
+	AssetBaseUrl string       `json:"asset_base_url"`
+	Images       []string     `json:"images"`
+	Stylesheets  []styleSheet `json:"stylesheets"`
 }
 
 type styleSheet struct {
-    FullPath    string `json:"full_path"`
-    OriginalUrl string `json:"original_url"`
-    //Url         string `json:"url"`
+	FullPath    string `json:"full_path"`
+	OriginalUrl string `json:"original_url"`
 }
 
 var chapterList = make([]ChapterItem, 0)
-var cssList = make([]string, 0)
+var chapterCssList = sync.Map{}
+var chapterImageList = sync.Map{}
 
 func GetAllChapter(url string) ([]ChapterItem, error) {
-    chapterRes := chapter{}
+	chapterRes := chapter{}
 
-    jc := jsonCus{url:url, method:"GET"}
-    if err := jc.getJson(&chapterRes); err != nil {
-        return []ChapterItem{}, err
-    }
+	jc := jsonCus{url: url}
+	if err := jc.getJson(&chapterRes); err != nil {
+		return []ChapterItem{}, err
+	}
 
-    fmt.Println(chapterRes.Next)
+	fmt.Println(chapterRes.Next)
 
-    for _, val := range chapterRes.Results {
-        chapterList = append(chapterList, val)
-    }
+	for _, val := range chapterRes.Results {
+		chapterList = append(chapterList, val)
+	}
 
-    if chapterRes.Next != "" {
-        if _, err := GetAllChapter(chapterRes.Next); err != nil {
-            return []ChapterItem{}, err
-        }
-    }
-    return chapterList, nil
+	if chapterRes.Next != "" {
+		if _, err := GetAllChapter(chapterRes.Next); err != nil {
+			return []ChapterItem{}, err
+		}
+	}
+	return chapterList, nil
 
 }
 
-func (ci ChapterItem) Down() {
-    fmt.Println("download", ci.FullPath)
-    if err := ci.saveHtml(ci.Content, ci.FullPath); err != nil {
-        fmt.Println(err)
-        return
-    }
-    if len(ci.Images) > 0 {
-        for _, imgUrl := range ci.Images {
-            fmt.Println("download", imgUrl)
-            if err := SaveHttpFile(ci.AssetBaseUrl+imgUrl, imgUrl); err != nil {
-                fmt.Println(err)
-            }
-        }
-    }
+func (ci *ChapterItem) Down() {
+	fmt.Println("download", ci.FullPath)
+	if err := ci.saveHtml(ci.Content, ci.FullPath); err != nil {
+		fmt.Println(err)
+		return
+	}
+	if len(ci.Images) > 0 {
+		for _, imgUrl := range ci.Images {
+			if _, isExist := chapterImageList.Load(imgUrl); isExist {
+				continue
+			}
+
+			fmt.Println("download", imgUrl)
+			chapterImageList.Store(imgUrl, true)
+			if err := SaveHttpFile(ci.AssetBaseUrl+imgUrl, imgUrl); err != nil {
+				fmt.Println(err)
+			}
+		}
+	}
 }
 
-func (ci ChapterItem) saveHtml(useUrl string, fullPath string) error {
-    fileBody, err := HttpGet(useUrl)
-    if err != nil {
-        return err
-    }
+func (ci *ChapterItem) saveHtml(useUrl string, fullPath string) error {
+	fileBody, err := HttpGet(useUrl)
+	if err != nil {
+		return err
+	}
 
-    styleHtml, err := ci.getCssHtml()
-    if err != nil {
-        return err
-    }
+	styleHtml, err := ci.getCssHtml()
+	if err != nil {
+		return err
+	}
 
-    head := "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\" /><title></title>" + styleHtml + "</head><body>"
-    foot := "</body></html>"
+	head := "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\" /><title></title>" + styleHtml + "</head><body>"
+	foot := "</body></html>"
 
-    body, err := ioutil.ReadAll(fileBody)
-    if err != nil {
-        return err
-    }
-    html := bytes.Buffer{}
-    html.WriteString(head)
-    html.Write(body)
-    html.WriteString(foot)
+	body, err := ioutil.ReadAll(fileBody)
+	if err != nil {
+		return err
+	}
+	html := bytes.Buffer{}
+	html.WriteString(head)
+	html.Write(body)
+	html.WriteString(foot)
 
-    if err = SaveFile(fullPath, html.Bytes()); err != nil {
-        return err
-    }
+	if err = SaveFile(fullPath, html.Bytes()); err != nil {
+		return err
+	}
 
-    return nil
+	return nil
 }
 
-func (ci ChapterItem) getCssHtml() (string, error) {
-    styleHtml := ""
-    if len(ci.Stylesheets) == 0 {
-        return styleHtml, nil
-    }
+func (ci *ChapterItem) getCssHtml() (string, error) {
+	styleHtml := strings.Builder{}
+	if len(ci.Stylesheets) == 0 {
+		return "", nil
+	}
 
-    for _, styleVal := range ci.Stylesheets {
-        if err := styleVal.saveCss(); err != nil {
-            return "", err
-        }
-        styleHtml += fmt.Sprintf("<link rel=\"stylesheet\" href=\"%s\" type=\"text/css\" />", styleVal.FullPath)
-    }
+	for _, styleVal := range ci.Stylesheets {
+		if err := styleVal.saveCss(); err != nil {
+			return "", err
+		}
+		styleHtml.WriteString(`<link rel="stylesheet" href="`)
+		styleHtml.WriteString(styleVal.FullPath)
+		styleHtml.WriteString(`" type="text/css" />`)
+	}
 
-    return styleHtml, nil
+	return styleHtml.String(), nil
 }
 
-func (ss styleSheet) saveCss() error {
-    for _, val := range cssList {
-        if val == ss.FullPath {
-            return nil
-        }
-    }
+func (ss *styleSheet) saveCss() error {
+	if _, isExist := chapterCssList.Load(ss.FullPath); isExist {
+		return nil
+	}
 
-    if err := SaveHttpFile(ss.OriginalUrl, ss.FullPath); err != nil {
-        return err
-    }
+	if err := SaveHttpFile(ss.OriginalUrl, ss.FullPath); err != nil {
+		return err
+	}
 
-    cssList = append(cssList, ss.FullPath)
+	chapterCssList.Store(ss.FullPath, true)
+	return nil
+}
 
-    return nil
+func RangeChapterImage(f func(k, v interface{}) bool) {
+	chapterImageList.Range(f)
 }
