@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"oreilly_kindle_book/lib"
+	"github.com/zyh94946/oreilly_kindle_book/lib"
 	"sync"
 )
 
