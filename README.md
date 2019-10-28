@@ -2,9 +2,20 @@
 
 # Generate mobi file for o'reilly book
 
+## Install
 Only support mac and linux.
 
 **Install [kindlegen](https://www.amazon.com/gp/feature.html?ie=UTF8&docId=1000765211.) first.**
+
+Assuming you already have a recent version of Go installed, pull down the code with go get:
+
+```
+$ go get github.com/zyh94946/oreilly_kindle_book
+```
+
+```
+$ go install github.com/zyh94946/oreilly_kindle_book
+```
 
 ```
 $ oreilly_kindle_book
