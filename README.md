@@ -14,6 +14,8 @@ Assuming you already have a recent version of Go installed.
 Use make & make install:
 
 ```
+$ git clone https://github.com/zyh94946/oreilly_kindle_book.git
+$ cd oreilly_kindle_book
 $ make && make install
 Building oreilly_kindle_book...
 Building success...
