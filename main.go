@@ -3,69 +3,58 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/zyh94946/oreilly_kindle_book/lib"
+	"log"
+	"os"
+	"runtime"
 	"sync"
+
+	"github.com/zyh94946/oreilly_kindle_book/lib"
 )
 
-var bookNum *string
-var userEmail *string
-var userPasswd *string
-
-func init() {
-	bookNum = flag.String("n", "", "the num of https://learning.oreilly.com/library/view/BOOK-NAME/***")
-	userEmail = flag.String("email", "", "you login email of https://www.oreilly.com/member/")
-	userPasswd = flag.String("p", "", "you login password of https://www.oreilly.com/member/")
-	flag.Parse()
-}
-
 func main() {
+	flag.Parse()
 
-	if *bookNum == "" || *userEmail == "" || *userPasswd == "" {
+	if lib.Config.Version {
+		fmt.Printf("oreilly_kindle_book %s (built: %s, Git SHA: %s, Go Version: %s)\n", Version, Built, GitSHA, runtime.Version())
+		os.Exit(0)
+	}
+
+	if lib.Config.ArgsIsEmpty() || lib.Config.Help {
 		flag.Usage()
-		return
+		if lib.Config.Help {
+			os.Exit(0)
+		} else {
+			os.Exit(1)
+		}
 	}
 
-	err := lib.InitCheck()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
 	defer lib.TmpClear()
-
-	if err := lib.Login(*userEmail, *userPasswd); err != nil {
-		fmt.Println(err)
-		return
+	if err := lib.InitCheck(); err != nil {
+		log.Fatalln(err)
 	}
-	fmt.Println("login success!")
 
-	bookInfo, err := lib.GetBookInfo(*bookNum)
+	if err := lib.Config.Login(); err != nil {
+		log.Fatalln(err)
+	}
+	log.Println("login success!")
+
+	bookInfo, err := lib.Config.GetBookInfo()
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Fatalln(err)
 	}
-	fmt.Println("book name:", bookInfo.Title)
+	log.Println("book name:", bookInfo.Title)
 
 	// Build toc.html, toc.ncx.
-	err = lib.BuildToc(bookInfo.Toc)
-	if err != nil {
-		fmt.Println(err)
-		return
+	if err := lib.BuildToc(bookInfo.Toc); err != nil {
+		log.Fatalln(err)
 	}
-	fmt.Println("build toc success!")
+	log.Println("build toc success!")
 
-	fmt.Println("get chapter:")
+	log.Println("get chapter:")
 	chapterList, err := lib.GetAllChapter(bookInfo.ChapterList)
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Fatalln(err)
 	}
-
-	err = lib.SaveHttpFile(bookInfo.Cover, "cover.jpg")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println("get cover success!")
 
 	// Save chapter html, images, css files.
 	maxPro := make(chan bool, 4)
@@ -84,14 +73,13 @@ func main() {
 	wg.Wait()
 
 	// Build opf file.
-	err = lib.BuildOpenPackagingFormat(chapterList)
-	if err != nil {
-		fmt.Println(err)
-		return
+	if err := lib.BuildOpenPackagingFormat(chapterList); err != nil {
+		log.Fatalln(err)
 	}
-	fmt.Println("build opf file success!")
+	log.Println("build opf file success!")
 
-	fmt.Println("generate mobi:")
+	log.Println("generate mobi:")
 	bookInfo.GenerateMobi()
 
+	os.Exit(0)
 }

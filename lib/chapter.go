@@ -2,8 +2,8 @@ package lib
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
+	"log"
 	"strings"
 	"sync"
 )
@@ -39,7 +39,7 @@ func GetAllChapter(url string) ([]ChapterItem, error) {
 		return []ChapterItem{}, err
 	}
 
-	fmt.Println(chapterRes.Next)
+	log.Println(chapterRes.Next)
 
 	for _, val := range chapterRes.Results {
 		chapterList = append(chapterList, val)
@@ -55,10 +55,9 @@ func GetAllChapter(url string) ([]ChapterItem, error) {
 }
 
 func (ci *ChapterItem) Down() {
-	fmt.Println("download", ci.FullPath)
+	log.Println("download", ci.FullPath)
 	if err := ci.saveHtml(ci.Content, ci.FullPath); err != nil {
-		fmt.Println(err)
-		return
+		log.Fatalln(err)
 	}
 	if len(ci.Images) > 0 {
 		for _, imgUrl := range ci.Images {
@@ -66,17 +65,17 @@ func (ci *ChapterItem) Down() {
 				continue
 			}
 
-			fmt.Println("download", imgUrl)
+			log.Println("download", imgUrl)
 			chapterImageList.Store(imgUrl, true)
-			if err := SaveHttpFile(ci.AssetBaseUrl+imgUrl, imgUrl); err != nil {
-				fmt.Println(err)
+			if err := saveHttpFile(ci.AssetBaseUrl+imgUrl, imgUrl); err != nil {
+				log.Fatalln(err)
 			}
 		}
 	}
 }
 
 func (ci *ChapterItem) saveHtml(useUrl string, fullPath string) error {
-	fileBody, err := HttpGet(useUrl)
+	fileBody, err := httpGet(useUrl)
 	if err != nil {
 		return err
 	}
@@ -98,7 +97,7 @@ func (ci *ChapterItem) saveHtml(useUrl string, fullPath string) error {
 	html.Write(body)
 	html.WriteString(foot)
 
-	if err = SaveFile(fullPath, html.Bytes()); err != nil {
+	if err = saveFile(fullPath, html.Bytes()); err != nil {
 		return err
 	}
 
@@ -128,7 +127,7 @@ func (ss *styleSheet) saveCss() error {
 		return nil
 	}
 
-	if err := SaveHttpFile(ss.OriginalUrl, ss.FullPath); err != nil {
+	if err := saveHttpFile(ss.OriginalUrl, ss.FullPath); err != nil {
 		return err
 	}
 
@@ -136,6 +135,6 @@ func (ss *styleSheet) saveCss() error {
 	return nil
 }
 
-func RangeChapterImage(f func(k, v interface{}) bool) {
+func rangeChapterImage(f func(k, v interface{}) bool) {
 	chapterImageList.Range(f)
 }

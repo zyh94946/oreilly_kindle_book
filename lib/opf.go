@@ -85,7 +85,7 @@ var opfTemplate = `<?xml version="1.0" encoding="utf-8"?>
 `
 
 func BuildOpenPackagingFormat(cl []ChapterItem) error {
-	bookInfo, _ := GetBookInfo("")
+	bookInfo, _ := Config.GetBookInfo()
 	authors := strings.Builder{}
 	for _, val := range bookInfo.Authors {
 		authors.WriteString(`<dc:creator>` + val.Name + `</dc:creator>`)
@@ -98,17 +98,15 @@ func BuildOpenPackagingFormat(cl []ChapterItem) error {
 		spineItem.WriteString(`<itemref idref="` + val.FullPath + `"/>"`)
 	}
 
-	RangeChapterImage(func(k interface{}, v interface{}) bool {
+	rangeChapterImage(func(k interface{}, v interface{}) bool {
 		manifestItem.WriteString(`<item id="` + k.(string) + `" media-type="" href="` + k.(string) + `"></item>"`)
 		return true
 	})
 
-	firstItem := GetFirstItem()
-
-	next := fmt.Sprintf("<reference type=\"text\" title=\"%s\" href=\"%s\"></reference>", firstItem.Label, firstItem.Href)
+	next := fmt.Sprintf("<reference type=\"text\" title=\"%s\" href=\"%s\"></reference>", firstTocItem.Label, firstTocItem.Href)
 
 	opf := fmt.Sprintf(opfTemplate, bookInfo.Title, bookInfo.Language, bookInfo.Isbn, authors, bookInfo.Issued, bookInfo.Description, manifestItem, spineItem, next)
-	if err := SaveFile("build.opf", []byte(opf)); err != nil {
+	if err := saveFile("build.opf", []byte(opf)); err != nil {
 		return err
 	}
 

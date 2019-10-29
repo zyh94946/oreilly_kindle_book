@@ -1,7 +1,7 @@
 package lib
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -28,37 +28,31 @@ type authors struct {
 	Name string `json:"name"`
 }
 
-var bookInfo = book{}
-
 func (bk *book) GenerateMobi() {
 	tmpDir := GetTmpPath()
 	mobiName := strings.Replace(bk.Title, " ", "_", -1) + ".mobi"
 	cmd := exec.Command("kindlegen", tmpDir+"/build.opf", "-c1", "-o", mobiName, "-verbose")
 	cmd.Stdout = os.Stdout
-	fmt.Println(cmd.Args)
+	log.Println(cmd.Args)
 
 	if err := cmd.Start(); err != nil {
-		fmt.Println("kindlegen err:", err)
-		return
+		log.Fatalln("kindlegen err:", err)
 	}
 
 	if err := cmd.Wait(); err != nil {
-		//fmt.Println("generate mobi err:", err)
-		//return
+		//log.Fatalln("generate mobi err:", err)
 	}
 
-	if isExist, _ := FileExists(tmpDir + "/" + mobiName); isExist == false {
-		fmt.Println("generate mobi error!")
-		return
+	if isExist, _ := fileExists(tmpDir + "/" + mobiName); isExist == false {
+		log.Fatalln("generate mobi error!")
 	}
 
 	moveDir, _ := filepath.Abs(".")
 	if err := os.Rename(tmpDir+"/"+mobiName, moveDir+"/"+mobiName); err != nil {
-		fmt.Println("move mobi err:", err)
-		return
+		log.Fatalln("move mobi err:", err)
 	}
 
-	fmt.Println("successfully generated mobi to", moveDir+"/"+mobiName)
+	log.Println("successfully generated mobi to", moveDir+"/"+mobiName)
 }
 
 func (bk *book) IsEmpty() bool {
@@ -66,17 +60,4 @@ func (bk *book) IsEmpty() bool {
 		return true
 	}
 	return false
-}
-
-func GetBookInfo(bookId string) (book, error) {
-	if !bookInfo.IsEmpty() {
-		return bookInfo, nil
-	}
-
-	jc := jsonCus{url: "https://learning.oreilly.com/api/v1/book/" + bookId + "/"}
-	if err := jc.getJson(&bookInfo); err != nil {
-		return book{}, err
-	}
-
-	return bookInfo, nil
 }

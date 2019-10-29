@@ -17,7 +17,7 @@ var tocList = make([]tocItem, 0)
 
 var tocNum = 1
 var tocDepth = 1
-var firstItem = tocItem{}
+var firstTocItem = tocItem{}
 
 var tocHtmlVar = strings.Builder{}
 var tocHtmlTemplate = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
@@ -68,7 +68,7 @@ func (ti tocItem) IsEmpty() bool {
 
 func BuildToc(tocUrl string) error {
 
-	bookInfo, _ := GetBookInfo("")
+	bookInfo, _ := Config.GetBookInfo()
 
 	if err := getToc(tocUrl); err != nil {
 		return err
@@ -76,12 +76,12 @@ func BuildToc(tocUrl string) error {
 	getTocVal(tocList)
 
 	tocHtml := fmt.Sprintf(tocHtmlTemplate, tocHtmlVar)
-	if err := SaveFile("toc.html", []byte(tocHtml)); err != nil {
+	if err := saveFile("toc.html", []byte(tocHtml)); err != nil {
 		return err
 	}
 
 	tocNcx := fmt.Sprintf(tocNcxTemplate, bookInfo.Isbn, tocDepth, bookInfo.PageCount, bookInfo.Title, bookInfo.OrderAbleAuthor, tocNcxVar)
-	if err := SaveFile("toc.ncx", []byte(tocNcx)); err != nil {
+	if err := saveFile("toc.ncx", []byte(tocNcx)); err != nil {
 		return err
 	}
 
@@ -104,8 +104,8 @@ func getTocVal(tl []tocItem) {
 			tocDepth = val.Depth
 		}
 
-		if firstItem.IsEmpty() {
-			firstItem = val
+		if firstTocItem.IsEmpty() {
+			firstTocItem = val
 		}
 
 		tocNum++
@@ -119,8 +119,4 @@ func getTocVal(tl []tocItem) {
 
 	}
 	tocHtmlVar.WriteString("</ul>")
-}
-
-func GetFirstItem() tocItem {
-	return firstItem
 }
