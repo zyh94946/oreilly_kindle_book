@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"time"
 )
@@ -34,10 +35,6 @@ func InitCheck() error {
 
 	if tmpDir, err = ioutil.TempDir("", "oreilly_kindle_book."); err != nil {
 		return errors.New("create temp dir error! err: " + err.Error())
-	}
-
-	if err := os.Mkdir(tmpDir+"/assets", 0777); err != nil {
-		return errors.New("create assets dir error! err: " + err.Error())
 	}
 
 	return nil
@@ -87,7 +84,14 @@ func saveHttpFile(baseUrl string, saveName string) error {
 }
 
 func saveFile(fullPath string, fileData []byte) error {
-	return ioutil.WriteFile(tmpDir+"/"+fullPath, fileData, 0644)
+	fileName := tmpDir + "/" + fullPath
+	dirName := filepath.Dir(fileName)
+	if isExist, _ := fileExists(dirName); !isExist {
+		if err := os.MkdirAll(dirName, 0777); err != nil {
+			return errors.New("create " + dirName + " dir error! err: " + err.Error())
+		}
+	}
+	return ioutil.WriteFile(fileName, fileData, 0644)
 }
 
 func httpGet(useUrl string) (io.ReadCloser, error) {

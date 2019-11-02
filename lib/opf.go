@@ -60,8 +60,6 @@ var opfTemplate = `<?xml version="1.0" encoding="utf-8"?>
         <!-- HTML content files [mandatory] -->
         %s
 
-        <item id="toc" media-type="application/xhtml+xml" href="toc.html"></item>
-
         <!-- table of contents [mandatory] -->
         <item id="My_Table_of_Contents" media-type="application/x-dtbncx+xml" href="toc.ncx"/>
 
@@ -72,12 +70,10 @@ var opfTemplate = `<?xml version="1.0" encoding="utf-8"?>
 
     <spine toc="My_Table_of_Contents">
         <!-- the spine defines the linear reading order of the book -->
-        <itemref idref="toc"/>
         %s
     </spine>
 
     <guide>
-        <reference type="toc" title="Table of Contents" href="toc.html"></reference>
         %s
     </guide>
 
@@ -103,9 +99,9 @@ func BuildOpenPackagingFormat(cl []ChapterItem) error {
 		return true
 	})
 
-	next := fmt.Sprintf("<reference type=\"text\" title=\"%s\" href=\"%s\"></reference>", firstTocItem.Label, firstTocItem.Href)
+	firstPage := fmt.Sprintf("<reference type=\"text\" title=\"%s\" href=\"%s\"></reference>", chapterList[0].Title, chapterList[0].FullPath)
 
-	opf := fmt.Sprintf(opfTemplate, bookInfo.Title, bookInfo.Language, bookInfo.Isbn, authors, bookInfo.Issued, bookInfo.Description, manifestItem, spineItem, next)
+	opf := fmt.Sprintf(opfTemplate, bookInfo.Title, bookInfo.Language, bookInfo.Isbn, authors.String(), bookInfo.Issued, bookInfo.Description, manifestItem.String(), spineItem.String(), firstPage)
 	if err := saveFile("build.opf", []byte(opf)); err != nil {
 		return err
 	}

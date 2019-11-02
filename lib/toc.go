@@ -17,21 +17,6 @@ var tocList = make([]tocItem, 0)
 
 var tocNum = 1
 var tocDepth = 1
-var firstTocItem = tocItem{}
-
-var tocHtmlVar = strings.Builder{}
-var tocHtmlTemplate = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-    <head><title>Table of Contents</title></head>
-    <body>
-        <div>
-            <h1><b>TABLE OF CONTENTS</b></h1>
-            <br />
-            <div>%s</div>
-        </div>
-    </body>
-</html>
-`
 
 var tocNcxVar = strings.Builder{}
 var tocNcxTemplate = `<?xml version="1.0" encoding="UTF-8"?>
@@ -46,12 +31,6 @@ var tocNcxTemplate = `<?xml version="1.0" encoding="UTF-8"?>
     <docTitle><text>%s</text></docTitle>
     <docAuthor><text>%s</text></docAuthor>
     <navMap>
-        <navPoint class="toc" id="toc" playOrder="1">
-            <navLabel>
-                <text>Table of Contents</text>
-            </navLabel>
-            <content src="toc.html"/>
-        </navPoint>
 
         %s
 
@@ -75,12 +54,7 @@ func BuildToc(tocUrl string) error {
 	}
 	getTocVal(tocList)
 
-	tocHtml := fmt.Sprintf(tocHtmlTemplate, tocHtmlVar)
-	if err := saveFile("toc.html", []byte(tocHtml)); err != nil {
-		return err
-	}
-
-	tocNcx := fmt.Sprintf(tocNcxTemplate, bookInfo.Isbn, tocDepth, bookInfo.PageCount, bookInfo.Title, bookInfo.OrderAbleAuthor, tocNcxVar)
+	tocNcx := fmt.Sprintf(tocNcxTemplate, bookInfo.Isbn, tocDepth, bookInfo.PageCount, bookInfo.Title, bookInfo.OrderAbleAuthor, tocNcxVar.String())
 	if err := saveFile("toc.ncx", []byte(tocNcx)); err != nil {
 		return err
 	}
@@ -98,25 +72,17 @@ func getToc(url string) error {
 }
 
 func getTocVal(tl []tocItem) {
-	tocHtmlVar.WriteString("<ul>")
 	for _, val := range tl {
 		if tocDepth < val.Depth {
 			tocDepth = val.Depth
 		}
 
-		if firstTocItem.IsEmpty() {
-			firstTocItem = val
-		}
-
-		tocNum++
-		tocHtmlVar.WriteString(`<li><a href="` + val.Href + `"><b>` + val.Label + `</b></a>`)
 		tocNcxVar.WriteString(fmt.Sprintf("<navPoint class=\"chapter\" id=\"chapter_%d\" playOrder=\"%[1]d\"><navLabel><text>%s</text></navLabel><content src=\"%s\"/>", tocNum, val.Label, val.Href))
 		if len(val.Children) > 0 {
 			getTocVal(val.Children)
 		}
-		tocHtmlVar.WriteString("</li>")
 		tocNcxVar.WriteString("</navPoint>")
+		tocNum++
 
 	}
-	tocHtmlVar.WriteString("</ul>")
 }

@@ -57,7 +57,8 @@ func GetAllChapter(url string) ([]ChapterItem, error) {
 func (ci *ChapterItem) Down() {
 	log.Println("download", ci.FullPath)
 	if err := ci.saveHtml(ci.Content, ci.FullPath); err != nil {
-		log.Fatalln(err)
+		log.Println(err)
+		return
 	}
 	if len(ci.Images) > 0 {
 		for _, imgUrl := range ci.Images {
@@ -68,7 +69,8 @@ func (ci *ChapterItem) Down() {
 			log.Println("download", imgUrl)
 			chapterImageList.Store(imgUrl, true)
 			if err := saveHttpFile(ci.AssetBaseUrl+imgUrl, imgUrl); err != nil {
-				log.Fatalln(err)
+				log.Println(err)
+				return
 			}
 		}
 	}

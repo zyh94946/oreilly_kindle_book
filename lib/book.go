@@ -36,20 +36,24 @@ func (bk *book) GenerateMobi() {
 	log.Println(cmd.Args)
 
 	if err := cmd.Start(); err != nil {
-		log.Fatalln("kindlegen err:", err)
+		log.Println("kindlegen err:", err)
+		return
 	}
 
 	if err := cmd.Wait(); err != nil {
-		//log.Fatalln("generate mobi err:", err)
+		//log.Println("generate mobi err:", err)
+		//return
 	}
 
 	if isExist, _ := fileExists(tmpDir + "/" + mobiName); isExist == false {
-		log.Fatalln("generate mobi error!")
+		log.Println("generate mobi error!")
+		return
 	}
 
 	moveDir, _ := filepath.Abs(".")
 	if err := os.Rename(tmpDir+"/"+mobiName, moveDir+"/"+mobiName); err != nil {
-		log.Fatalln("move mobi err:", err)
+		log.Println("move mobi err:", err)
+		return
 	}
 
 	log.Println("successfully generated mobi to", moveDir+"/"+mobiName)
