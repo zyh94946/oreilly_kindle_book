@@ -31,7 +31,7 @@ type authors struct {
 func (bk *book) GenerateMobi() {
 	tmpDir := GetTmpPath()
 	mobiName := strings.Replace(bk.Title, " ", "_", -1) + ".mobi"
-	cmd := exec.Command("kindlegen", tmpDir+"/build.opf", "-c1", "-o", mobiName, "-verbose")
+	cmd := exec.Command("kindlegen", tmpDir+"/build.opf", "-dont_append_source", "-c2", "-o", mobiName, "-verbose")
 	cmd.Stdout = os.Stdout
 	log.Println(cmd.Args)
 

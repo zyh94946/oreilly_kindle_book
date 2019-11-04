@@ -90,12 +90,12 @@ func BuildOpenPackagingFormat(cl []ChapterItem) error {
 	manifestItem := strings.Builder{}
 	spineItem := strings.Builder{}
 	for _, val := range cl {
-		manifestItem.WriteString(`<item id="` + val.FullPath + `" media-type="application/xhtml+xml" href="` + val.FullPath + `"></item>"`)
-		spineItem.WriteString(`<itemref idref="` + val.FullPath + `"/>"`)
+		manifestItem.WriteString(`<item id="` + val.FullPath + `" media-type="text/x-oeb1-document" href="` + val.FullPath + `"></item>`)
+		spineItem.WriteString(`<itemref idref="` + val.FullPath + `"/>`)
 	}
 
 	rangeChapterImage(func(k interface{}, v interface{}) bool {
-		manifestItem.WriteString(`<item id="` + k.(string) + `" media-type="" href="` + k.(string) + `"></item>"`)
+		manifestItem.WriteString(`<item id="` + k.(string) + `" media-type="" href="` + k.(string) + `"></item>`)
 		return true
 	})
 
